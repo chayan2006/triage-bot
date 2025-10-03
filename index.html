@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wellness Center | AI Healthcare Triage</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <style>
+    :root {
+      --primary-green-light: #86efac;
+      --primary-green-dark: #4ade80;
+      --light-bg: #f0fdf4;
+      --dark-bg: #0a0a0a;
+      --card-bg-light: rgba(255, 255, 255, 0.8);
+      --card-bg-dark: rgba(15, 23, 42, 0.8);
+      --text-light-theme: #14532d;
+      --text-dark-theme: #e9f0f8;
+      --text-muted-light: #3f6212;
+      --text-muted-dark: #94a3b8;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body { 
+      font-family: 'Poppins', sans-serif; 
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+    
+    /* Light Mode */
+    body {
+      background-color: var(--light-bg);
+      color: var(--text-light-theme);
+    }
+    .dark body {
+      background-color: var(--dark-bg);
+      color: var(--text-dark-theme);
+    }
+
+    /* Preloader Styles */
+    #preloader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+    }
+    #preloader.hidden {
+        opacity: 0;
+        visibility: hidden;
+    }
+    .preloader-svg {
+        width: 90%;
+        max-width: 400px;
+        height: auto;
+    }
+    .preloader-path {
+        stroke-dasharray: 1000;
+        stroke-dashoffset: 1000;
+        animation: draw-ekg 2.5s ease-in-out forwards;
+        filter: drop-shadow(0 0 4px var(--primary-green-dark));
+    }
+    .preloader-text {
+        opacity: 0;
+        animation: fade-in-text 1s ease-in forwards 2.5s;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    @keyframes draw-ekg { to { stroke-dashoffset: 0; } }
+    @keyframes fade-in-text { to { opacity: 1; } }
+    @keyframes heartbeat {
+        0% { transform: scale(1); }
+        10% { transform: scale(1); }
+        20% { transform: scale(1.08); }
+        30% { transform: scale(1); }
+        40% { transform: scale(1); }
+        100% { transform: scale(1); }
+    }
+    .preloader-path.drawn {
+        animation: heartbeat 1.2s ease-in-out infinite 2.6s;
+        transform-origin: 155px 50px; /* Center of the heart shape */
+    }
+
+
+    /* Page Content & Transitions */
+    .page-content {
+      display: none;
+      animation: fadeInPage 0.6s ease-in-out;
+      padding-bottom: 80px; /* Space for mobile nav */
+    }
+    .page-content.active {
+      display: block;
+    }
+    @keyframes fadeInPage {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Sidebar & Mobile Navigation */
+    #sidebar { background-color: rgba(255, 255, 255, 0.6); color: var(--text-light-theme); }
+    .dark #sidebar { background-color: rgba(0, 0, 0, 0.8); color: #d1d5db; }
+
+    #sidebar nav a {
+      transition: all 0.2s ease-in-out;
+    }
+    #sidebar nav a:hover {
+        transform: translateX(5px);
+    }
+
+    #sidebar nav a.active, #mobile-nav a.active {
+      color: #16a34a;
+    }
+    .dark #sidebar nav a.active, .dark #mobile-nav a.active {
+      color: var(--primary-green-dark);
+    }
+
+    #sidebar nav a.active {
+      background-color: #dcfce7;
+      box-shadow: inset 4px 0 0 #16a34a;
+    }
+    .dark #sidebar nav a.active {
+      background-color: #111827;
+      box-shadow: inset 4px 0 0 var(--primary-green-dark);
+    }
+
+    #mobile-nav {
+        background-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
+        color: var(--text-muted-light);
+    }
+    .dark #mobile-nav {
+        background-color: rgba(0, 0, 0, 0.8);
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.4);
+        color: #9ca3af;
+    }
+    
+    /* General Styles */
+    .gradient-text {
+      background-image: linear-gradient(to right, #22c55e, #15803d);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .dark .gradient-text {
+      background-image: linear-gradient(to right, #4ade80, #34d399);
+    }
+    
+    /* 3D Background */
+    #bg-3d-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    /* Triage Bot Specific Styles */
+    .card { background-color: var(--card-bg-light); border: 1px solid #bbf7d0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
+    .dark .card { background-color: var(--card-bg-dark); border: 1px solid #1e293b; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+    
+    textarea, .form-input { width:100%; padding:12px; border-radius:12px; background:#f0fdf4; border: 1px solid #bbf7d0; color:var(--text-light-theme); }
+    textarea:focus, .form-input:focus { box-shadow: 0 0 10px rgba(74, 222, 128, 0.5); outline: none; border-color: var(--primary-green-dark); }
+    .dark textarea, .dark .form-input { background:#0f1728; border: 1px solid #26314f; color:#fff; }
+    textarea { min-height:180px; }
+
+    .badge { padding:6px 12px; border-radius:999px; font-size:12px; font-weight:600; display:inline-flex; align-items: center; }
+    .badge.ok{ background:rgba(25,195,125,.15); color:#059669; border: 1px solid rgba(25,195,125,.3); }
+    .dark .badge.ok{ color:#35e0a1; }
+    .badge.warn{ background:rgba(234, 179, 8, .15); color:#a16207; border: 1px solid rgba(234, 179, 8, .3); }
+    .dark .badge.warn{ background:rgba(255,182,39,.15); color:#ffd37b; border: 1px solid rgba(255,182,39,.3); }
+    .badge.danger{ background:rgba(220, 38, 38,.15); color:#991b1b; border: 1px solid rgba(220, 38, 38,.3); animation:pulseDangerLight 1.5s infinite; }
+    .dark .badge.danger{ background:rgba(255,91,91,.15); color:#ff9a9a; border: 1px solid rgba(255,91,91,.3); animation:pulseDangerDark 1.5s infinite; }
+
+    @keyframes pulseDangerLight { 0%,100%{ box-shadow:0 0 3px #ef4444; } 50%{ box-shadow:0 0 15px #ef4444; } }
+    @keyframes pulseDangerDark { 0%,100%{ box-shadow:0 0 3px #ff5b5b; } 50%{ box-shadow:0 0 15px #ff5b5b; } }
+    
+    .loading-spinner{ border:3px solid #ccc; border-top:3px solid var(--primary-green-dark); }
+    .dark .loading-spinner{ border:3px solid #333; }
+    
+    kbd { background: #e5e7eb; color: #4b5563; border-radius: 4px; padding: 2px 6px; font-size: 0.8em; }
+    .dark kbd { background: #374151; color: #d1d5db; }
+    
+    .health-tip-card { background-color: #dcfce7; }
+    .dark .health-tip-card { background-color: rgba(15, 23, 42, 0.8); }
+
+    /* AI Doctor Chat */
+    .chat-bubble.ai { background-color: #e5e7eb; color: var(--text-light-theme); }
+    .dark .chat-bubble.ai { background-color: #374151; color: var(--text-dark-theme); }
+    
+    .quick-reply-btn { background-color: #f3f4f6; border: 1px solid #e5e7eb; color: var(--text-light-theme); }
+    .dark .quick-reply-btn { background-color: #1f2937; border: 1px solid #374151; color: var(--text-dark-theme); }
+    .quick-reply-btn:hover { background-color: #e5e7eb; }
+    .dark .quick-reply-btn:hover { background-color: #374151; }
+    
+    /* Theme Toggle */
+    #theme-toggle-btn {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    #theme-toggle-btn {
+        background-color: rgba(255,255,255,0.7);
+        border: 1px solid #dcfce7;
+    }
+    .dark #theme-toggle-btn {
+        background-color: rgba(15, 23, 42, 0.7);
+        border: 1px solid #334155;
+    }
+    #theme-toggle-btn:hover {
+        transform: scale(1.1) rotate(15deg);
+    }
+    #theme-toggle-btn .fa-sun { display: none; }
+    .dark #theme-toggle-btn .fa-sun { display: inline-block; }
+    .dark #theme-toggle-btn .fa-moon { display: none; }
+
+  </style>
+</head>
+<body class="bg-black">
+  <div id="preloader">
+      <svg class="preloader-svg" viewBox="0 0 350 100">
+        <path class="preloader-path" stroke="#4ade80" stroke-width="3" fill="none" 
+              d="M0,50 H70 L80,40 L90,60 L100,50 H120 C 120,20 190,20 190,50 H210 L220,40 L230,60 L240,50 H350" />
+      </svg>
+      <div class="preloader-text text-center">
+        <h2 class="text-3xl font-bold text-gray-200">Wellness Center</h2>
+        <p class="text-gray-400 mt-2">Our AI bot will help you in any emergency situation.</p>
+      </div>
+  </div>
+  
+  <div id="app-content" class="opacity-0 transition-opacity duration-500">
+      <canvas id="bg-3d-animation"></canvas>
+
+      <div class="fixed top-6 right-6 z-50 flex items-center gap-4">
+        <a href="#login" id="login-btn" class="nav-link bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm h-12 w-12 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 hover:scale-110 transition-transform" title="Login">
+            <i class="fas fa-user text-lg text-slate-800 dark:text-gray-200"></i>
+        </a>
+        <button id="theme-toggle-btn" title="Toggle Theme">
+            <i class="fas fa-moon text-lg text-slate-800"></i>
+            <i class="fas fa-sun text-lg text-yellow-400"></i>
+        </button>
+      </div>
+
+
+      <div class="flex">
+        <aside id="sidebar" class="backdrop-blur-sm w-64 min-h-screen fixed top-0 left-0 z-40 p-6 hidden lg:flex flex-col">
+          <a href="#home" class="nav-link text-2xl font-bold flex items-center mb-10 text-green-700 dark:text-green-400">
+            <i class="fas fa-heart-pulse mr-2"></i>Wellness Center
+          </a>
+          <nav class="flex flex-col space-y-3">
+            <a href="#home" class="nav-link text-lg py-3 px-4 rounded-lg hover:bg-green-100 dark:hover:bg-gray-800 hover:text-green-700 dark:hover:text-white transition-colors duration-200"><i class="fas fa-home w-6 mr-3"></i>Home</a>
+            <a href="#triage" class="nav-link text-lg py-3 px-4 rounded-lg hover:bg-green-100 dark:hover:bg-gray-800 hover:text-green-700 dark:hover:text-white transition-colors duration-200"><i class="fas fa-robot w-6 mr-3"></i>AI Triage</a>
+            <a href="#emergency" class="nav-link text-lg py-3 px-4 rounded-lg hover:bg-green-100 dark:hover:bg-gray-800 hover:text-green-700 dark:hover:text-white transition-colors duration-200"><i class="fas fa-ambulance w-6 mr-3"></i>Emergency</a>
+            <a href="#hospitals" class="nav-link text-lg py-3 px-4 rounded-lg hover:bg-green-100 dark:hover:bg-gray-800 hover:text-green-700 dark:hover:text-white transition-colors duration-200"><i class="fas fa-hospital-alt w-6 mr-3"></i>Hospitals</a>
+            <a href="#recommend" class="nav-link text-lg py-3 px-4 rounded-lg hover:bg-green-100 dark:hover:bg-gray-800 hover:text-green-700 dark:hover:text-white transition-colors duration-200"><i class="fas fa-user-doctor w-6 mr-3"></i>AI Assistant</a>
+            <a href="#about" class="nav-link text-lg py-3 px-4 rounded-lg hover:bg-green-100 dark:hover:bg-gray-800 hover:text-green-700 dark:hover:text-white transition-colors duration-200"><i class="fas fa-info-circle w-6 mr-3"></i>About</a>
+          </nav>
+        </aside>
+
+        <main class="lg:ml-64 flex-1">
+          <section id="home" class="page-content min-h-screen flex items-center justify-center text-center px-4 relative z-10">
+            <div>
+              <div class="bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm p-12 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-800">
+                <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                   <i class="fas fa-robot text-5xl text-green-600 dark:text-green-400"></i>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-green-800 dark:from-green-300 dark:to-green-500">AI-Powered Health Assistant</h1>
+                <p class="text-lg md:text-xl mb-8 max-w-3xl mx-auto text-green-900 dark:text-gray-300">Your personal guide to understanding symptoms, finding nearby care, and getting professional health recommendations.</p>
+                <a href="#triage" class="nav-link bg-green-500 text-white font-bold py-3 px-8 rounded-full hover:bg-green-600 transition duration-300 text-lg shadow-lg shadow-green-500/20">Get Started</a>
+              </div>
+               <div class="mt-12 max-w-4xl mx-auto">
+                    <h3 class="text-2xl font-semibold dark:text-white mb-6">Daily Health Tips</h3>
+                    <div id="health-tips-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Health tips will be injected here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+          </section>
+          
+          <section id="triage" class="page-content min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-5xl mx-auto">
+              <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center gradient-text"><i class="fas fa-robot mr-3"></i>AI Triage</h2>
+              
+              <div class="card p-6 sm:p-8 rounded-2xl mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">1. Describe Your Symptoms</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Please provide as much detail as possible for a more accurate assessment. Mention the duration, severity, and location of your symptoms.</p>
+                <textarea id="symptoms" placeholder="e.g., High fever for 2 days, sore throat, persistent cough..."></textarea>
+                <div class="flex items-center flex-wrap mt-4 gap-3">
+                  <select id="languageSelect" class="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="en-US">English</option>
+                    <option value="hi-IN">हिन्दी</option>
+                    <option value="mr-IN">मराठी</option>
+                    <option value="bn-IN">বাংলা</option>
+                    <option value="ta-IN">தமிழ்</option>
+                    <option value="te-IN">తెలుగు</option>
+                    <option value="kn-IN">ಕನ್ನಡ</option>
+                    <option value="gu-IN">ગુજરાતી</option>
+                    <option value="pa-IN">ਪੰਜਾਬੀ</option>
+                  </select>
+                  <button id="micBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">🎙️ Record</button>
+                  <button id="playBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" disabled>🔊 Play</button>
+                  <button id="triageBtn" class="px-6 py-2 bg-green-500 text-white font-bold rounded-lg flex items-center hover:bg-green-600 transition-colors shadow-md shadow-green-500/20 ml-auto">
+                    Get Triage
+                    <span id="loader" class="ml-2 hidden loading-spinner"></span>
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-3">Tip: Press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to submit.</p>
+              </div>
+
+              <div id="triage-results-container" class="hidden">
+                <div id="triage-results" class="card p-6 sm:p-8 rounded-2xl">
+                  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-0">2. Triage Results</h3>
+                    <span id="riskBadge" class="badge hidden"></span>
+                  </div>
+                  <div id="emergencyBanner" class="hidden p-4 bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 rounded-lg mb-4 border border-red-200 dark:border-red-700">
+                    🚨 <strong>Emergency:</strong> Seek immediate medical care or call local emergency services.
+                  </div>
+                  <div class="space-y-4">
+                      <div>
+                        <p id="conditionsLabel" class="font-semibold text-gray-800 dark:text-gray-300">Probable conditions:</p>
+                        <ul id="conditions" class="list-disc ml-6 text-gray-600 dark:text-gray-400 mt-1"><li>—</li></ul>
+                      </div>
+                      <div>
+                        <p id="explanationLabel" class="font-semibold text-gray-800 dark:text-gray-300">Explanation:</p>
+                        <p id="explanation" class="text-gray-600 dark:text-gray-400">—</p>
+                      </div>
+                      <div>
+                        <p id="adviceLabel" class="font-semibold text-gray-800 dark:text-gray-300">Advice:</p>
+                        <p id="advice" class="text-gray-600 dark:text-gray-400">—</p>
+                      </div>
+                       <div>
+                        <p id="medicineLabel" class="font-semibold text-gray-800 dark:text-gray-300">Recommended Medicine:</p>
+                        <ul id="medicine" class="list-disc ml-6 text-gray-600 dark:text-gray-400 mt-1"><li>—</li></ul>
+                      </div>
+                      <div>
+                        <p id="remediesLabel" class="font-semibold text-gray-800 dark:text-gray-300">Home Remedies:</p>
+                        <ul id="remedies" class="list-disc ml-6 text-gray-600 dark:text-gray-400 mt-1"><li>—</li></ul>
+                      </div>
+                      <div>
+                          <p id="youtubeLabel" class="font-semibold text-gray-800 dark:text-gray-300">Related Videos:</p>
+                          <ul id="youtube-links" class="space-y-2 text-gray-600 dark:text-gray-400 mt-1"><li>—</li></ul>
+                      </div>
+                  </div>
+                  <button id="consultAiDoctorBtn" class="hidden mt-6 w-full px-4 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors animate-pulse">
+                      Consult AI Emergency Assistant
+                  </button>
+                  <div class="mt-5 flex gap-2 items-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mr-auto">Was this helpful?</p>
+                    <button id="thumbUp" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600" title="This was helpful">👍</button>
+                    <button id="thumbDown" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600" title="This was not helpful">👎</button>
+                    <span id="feedbackMessage" class="text-green-600 dark:text-green-400 text-sm ml-2"></span>
+                    <span id="resultError" class="text-red-500 dark:text-red-400 text-sm ml-2"></span>
+                  </div>
+                </div>
+              </div>
+               <p class="text-sm text-gray-500 dark:text-gray-500 mt-10 text-center">
+                ⚠️ Disclaimer: This tool provides educational information and is not a medical diagnosis. If symptoms worsen, seek professional care.
+              </p>
+            </div>
+          </section>
+
+          <section id="emergency" class="page-content min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold text-red-500 dark:text-red-400 mb-8 text-center lg:text-left"><i class="fas fa-ambulance mr-3"></i>Emergency Contacts</h2>
+                <div class="card p-8 rounded-2xl">
+                    <p class="text-center text-gray-600 dark:text-gray-400 mb-8">
+                        Below are the national emergency helpline numbers for India. Please dial them in case of an emergency. Your location can provide context, but these numbers are the primary national contacts.
+                    </p>
+                    <div id="emergency-contacts-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Emergency contacts will be populated here -->
+                    </div>
+                    <div id="location-status" class="text-center mt-8 text-sm text-gray-500">
+                        <button id="getLocationBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                            <i class="fas fa-map-marker-alt mr-2"></i>Get Location for Context
+                        </button>
+                        <p id="location-message" class="mt-2"></p>
+                    </div>
+                </div>
+            </div>
+          </section>
+
+          <section id="hospitals" class="page-content min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="max-w-3xl mx-auto text-center">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 gradient-text"><i class="fas fa-hospital-alt mr-3"></i>Find Nearby Hospitals</h2>
+                <div class="card p-8 rounded-2xl">
+                    <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                       <i class="fas fa-map-location-dot text-5xl text-blue-400"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Open Google Maps</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-8">
+                        Click the button below to use your current location to search for nearby hospitals and clinics directly in Google Maps. This will open in a new tab.
+                    </p>
+                    <button id="findHospitalsBtn" class="bg-blue-500 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-600 transition duration-300 text-lg shadow-lg shadow-blue-500/20 w-full md:w-auto">
+                        <i class="fas fa-search-location mr-3"></i>Find Hospitals Near Me
+                    </button>
+                    <p id="mapStatus" class="text-sm text-gray-500 mt-6 h-5"></p>
+                </div>
+            </div>
+          </section>
+          
+          <section id="recommend" class="page-content min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="max-w-3xl mx-auto w-full">
+                <div id="ai-doctor-container" class="card rounded-2xl overflow-hidden p-0">
+                    <div id="ai-doctor-header" class="p-4 bg-gray-50 dark:bg-gray-800/50 flex items-center gap-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="ai-avatar"><i class="fas fa-robot text-2xl text-black"></i></div>
+                        <div>
+                            <h3 id="ai-assistant-title" class="font-bold text-lg text-gray-900 dark:text-white">AI Assistant</h3>
+                            <p id="ai-doctor-status" class="text-sm text-green-600 dark:text-green-400">Online</p>
+                        </div>
+                    </div>
+                    <div id="ai-doctor-chat-window" class="p-4 space-y-4 flex flex-col">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="p-4 bg-white/80 dark:bg-gray-900/50">
+                        <div id="quick-replies-container" class="flex flex-wrap gap-2 mb-3 justify-center">
+                            <!-- Quick reply buttons will appear here -->
+                        </div>
+                        <div id="ai-doctor-input-container" class="flex items-center gap-3">
+                            <input type="text" id="ai-doctor-input" placeholder="Ask a health-related question..." class="flex-1 bg-gray-100 dark:bg-gray-800 p-3 rounded-full border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 px-5">
+                            <button id="ai-doctor-send" class="w-12 h-12 bg-green-500 text-white font-bold rounded-full hover:bg-green-600 transition-colors flex items-center justify-center">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </section>
+          
+          <section id="about" class="page-content min-h-screen py-20 px-4 sm:px-6 lg:px-8 flex items-center">
+              <div class="max-w-5xl mx-auto">
+                  <div class="grid md:grid-cols-2 gap-12 items-center">
+                      <div class="card p-8 rounded-lg">
+                          <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop" alt="Medical Team" class="rounded-lg shadow-xl mb-6">
+                      </div>
+                      <div class="text-center md:text-left">
+                          <h2 class="text-3xl md:text-4xl font-bold mb-4 gradient-text">Why Choose Wellness Center?</h2>
+                          <p class="text-gray-600 dark:text-gray-400 mb-6">Our mission is to provide accessible, high-quality, patient-centered healthcare. We leverage state-of-the-art AI to assist our team of dedicated professionals, ensuring you receive the best care possible, anytime, anywhere.</p>
+                          <ul class="space-y-4 text-gray-800 dark:text-gray-300">
+                              <li class="flex items-center"><i class="fas fa-check-circle text-green-500 dark:text-green-400 mr-3"></i><span><strong>Experienced Professionals:</strong> Our team consists of board-certified specialists.</span></li>
+                              <li class="flex items-center"><i class="fas fa-check-circle text-green-500 dark:text-green-400 mr-3"></i><span><strong>Advanced Technology:</strong> We use AI for accurate, initial triage information.</span></li>
+                              <li class="flex items-center"><i class="fas fa-check-circle text-green-500 dark:text-green-400 mr-3"></i><span><strong>Personalized Care:</strong> We create tailored health plans for every patient.</span></li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </section>
+
+          <section id="login" class="page-content min-h-screen py-12 px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="max-w-md mx-auto w-full">
+                <h2 class="text-3xl md:text-4xl font-bold mb-8 text-center gradient-text"><i class="fas fa-sign-in-alt mr-3"></i>Login to Your Account</h2>
+                <div class="card p-8 rounded-2xl">
+                    <form id="login-form">
+                        <div class="space-y-6">
+                            <div>
+                                <label for="email" class="font-semibold block mb-2 text-gray-700 dark:text-gray-300">Email Address</label>
+                                <input type="email" id="email" name="email" placeholder="you@example.com" required
+                                       class="w-full p-3 form-input">
+                            </div>
+                            <div>
+                                <label for="password" class="font-semibold block mb-2 text-gray-700 dark:text-gray-300">Password</label>
+                                <input type="password" id="password" name="password" placeholder="••••••••" required
+                                       class="w-full p-3 form-input">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-6">
+                            <a href="#" class="text-sm text-green-600 dark:text-green-400 hover:underline">Forgot Password?</a>
+                        </div>
+                        <button type="submit" class="w-full bg-green-500 text-white font-bold py-3 px-8 rounded-full hover:bg-green-600 transition duration-300 text-lg shadow-lg shadow-green-500/20 mt-6">
+                            Login
+                        </button>
+                    </form>
+
+                    <div class="my-6 flex items-center">
+                        <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                        <span class="mx-4 text-sm text-gray-500">OR</span>
+                        <div class="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                    </div>
+
+                    <button id="google-login-btn" class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold py-3 px-8 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition duration-300 flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-3" viewBox="0 0 48 48">
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l8.15 6.29C12.06 13.92 17.63 9.5 24 9.5z"></path>
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.42-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
+                            <path fill="#FBBC05" d="M10.71 28.72c-.22-.67-.35-1.37-.35-2.09s.13-1.42.35-2.09l-8.15-6.29C.94 19.12 0 21.45 0 24c0 2.55.94 4.88 2.56 6.58l8.15-6.29z"></path>
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.37 0-11.94-4.42-13.91-10.43l-8.15 6.29C6.51 42.62 14.62 48 24 48z"></path>
+                            <path fill="none" d="M0 0h48v48H0z"></path>
+                        </svg>
+                        Continue with Google
+                    </button>
+                    
+                    <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-8">
+                        Don't have an account? <a href="#" class="font-semibold text-green-600 dark:text-green-400 hover:underline">Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </section>
+        </main>
+      </div>
+
+      <nav id="mobile-nav" class="lg:hidden fixed bottom-0 left-0 right-0 backdrop-blur-sm flex justify-around py-3">
+          <a href="#home" class="nav-link flex flex-col items-center text-xs gap-1"><i class="fas fa-home text-xl"></i>Home</a>
+          <a href="#triage" class="nav-link flex flex-col items-center text-xs gap-1"><i class="fas fa-robot text-xl"></i>Triage</a>
+          <a href="#emergency" class="nav-link flex flex-col items-center text-xs gap-1"><i class="fas fa-ambulance text-xl"></i>Emergency</a>
+          <a href="#recommend" class="nav-link flex flex-col items-center text-xs gap-1"><i class="fas fa-user-doctor text-xl"></i>Assistant</a>
+          <a href="#about" class="nav-link flex flex-col items-center text-xs gap-1"><i class="fas fa-info-circle text-xl"></i>About</a>
+      </nav>
+  </div>
+  
+  <script type="module">
+    // Firebase SDK Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        /*************** GEMINI API CONFIGURATION ***************/
+        const GEMINI_API_KEY = "AIzaSyDdM6h4HDQH7pgqbR9SafsgjHNyGTtDLNY"; // User-provided API Key
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-05-20";
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+        /********************************************************/
+
+        /******************** FIREBASE SETUP ********************/
+        let db, auth;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'wellness-center-app';
+        try {
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            if (Object.keys(firebaseConfig).length > 0) {
+              const app = initializeApp(firebaseConfig);
+              db = getFirestore(app);
+              auth = getAuth(app);
+              onAuthStateChanged(auth, async (user) => {
+                  if (!user) {
+                      try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                      } catch (authError) {
+                          console.error("Firebase auth failed:", authError);
+                      }
+                  }
+              });
+            } else {
+              console.warn("Firebase config is missing. Feedback functionality will be disabled.");
+            }
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+        }
+        /********************************************************/
+        
+        // General Elements
+        const preloader = document.getElementById("preloader");
+        const appContent = document.getElementById("app-content");
+        const navLinks = document.querySelectorAll(".nav-link");
+        const pageContents = document.querySelectorAll(".page-content");
+        const themeToggleBtn = document.getElementById("theme-toggle-btn");
+        const loginForm = document.getElementById('login-form');
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        
+        // Triage Elements
+        const triageResultsContainer = document.getElementById('triage-results-container');
+        const symptomsEl = document.getElementById("symptoms");
+        const triageBtn = document.getElementById("triageBtn");
+        const loader = document.getElementById("loader");
+        const riskBadge = document.getElementById("riskBadge");
+        const emergencyBanner = document.getElementById("emergencyBanner");
+        const conditionsEl = document.getElementById("conditions");
+        const explanationEl = document.getElementById("explanation");
+        const adviceEl = document.getElementById("advice");
+        const medicineEl = document.getElementById("medicine");
+        const remediesEl = document.getElementById("remedies");
+        const youtubeLinksEl = document.getElementById("youtube-links");
+        const micBtn = document.getElementById("micBtn");
+        const playBtn = document.getElementById("playBtn");
+        const findHospitalsBtn = document.getElementById("findHospitalsBtn");
+        const resultError = document.getElementById("resultError");
+        const mapStatus = document.getElementById("mapStatus");
+        const languageSelect = document.getElementById("languageSelect");
+        const consultAiDoctorBtn = document.getElementById('consultAiDoctorBtn');
+        const thumbUpBtn = document.getElementById('thumbUp');
+        const thumbDownBtn = document.getElementById('thumbDown');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const conditionsLabel = document.getElementById('conditionsLabel');
+        const explanationLabel = document.getElementById('explanationLabel');
+        const adviceLabel = document.getElementById('adviceLabel');
+        const medicineLabel = document.getElementById('medicineLabel');
+        const remediesLabel = document.getElementById('remediesLabel');
+        const youtubeLabel = document.getElementById('youtubeLabel');
+        const healthTipsContainer = document.getElementById('health-tips-container');
+        
+        // AI Doctor Elements
+        const aiDoctorContainer = document.getElementById('ai-doctor-container');
+        const aiDoctorChatWindow = document.getElementById('ai-doctor-chat-window');
+        const aiDoctorInputContainer = document.getElementById('ai-doctor-input-container');
+        const aiDoctorInput = document.getElementById('ai-doctor-input');
+        const aiDoctorSendBtn = document.getElementById('ai-doctor-send');
+        const quickRepliesContainer = document.getElementById('quick-replies-container');
+        const aiDoctorStatus = document.getElementById('ai-doctor-status');
+        const aiAssistantTitle = document.getElementById('ai-assistant-title');
+
+        // Emergency Page Elements
+        const emergencyContactsList = document.getElementById('emergency-contacts-list');
+        const getLocationBtn = document.getElementById('getLocationBtn');
+        const locationMessage = document.getElementById('location-message');
+
+        let lastOutcome = null;
+        let chatHistory = [];
+        let chatMode = 'general'; // 'general' or 'emergency'
+        let availableVoices = [];
+
+        /********************** THEME SWITCHER **********************/
+        const htmlEl = document.documentElement;
+        
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                htmlEl.classList.remove('dark');
+            } else {
+                htmlEl.classList.add('dark');
+            }
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = htmlEl.classList.contains('dark');
+            const newTheme = isDark ? 'light' : 'dark';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else if (prefersDark) {
+            applyTheme('dark');
+        } else {
+            applyTheme('light');
+        }
+
+
+        /********************** Preloader & Initial Animation **********************/
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            preloader.classList.add('hidden');
+            appContent.classList.remove('opacity-0');
+            
+            displayHealthTips();
+            populateEmergencyContacts();
+            switchPage(window.location.hash || '#home');
+          }, 4000);
+
+          const ekgPath = document.querySelector('.preloader-path');
+          if (ekgPath) {
+              setTimeout(() => {
+                  ekgPath.classList.add('drawn');
+              }, 2500);
+          }
+        });
+        
+        /********************** 3D Background Animation *************************/
+        let scene, camera, renderer, dna;
+        function initDnaAnimation() {
+            const canvas = document.getElementById('bg-3d-animation');
+            if (!canvas) return;
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            dna = new THREE.Group();
+            scene.add(dna);
+
+            const radius = 1;
+            const height = 15;
+            const pointsPerStrand = 50;
+            const particleGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const particleMaterial = new THREE.MeshBasicMaterial({
+                color: 0x4ade80,
+                transparent: true,
+                opacity: 0.3,
+                blending: THREE.AdditiveBlending
+            });
+
+            const rungMaterial = new THREE.LineBasicMaterial({
+                color: 0x4ade80,
+                transparent: true,
+                opacity: 0.1,
+                blending: THREE.AdditiveBlending
+            });
+
+            for (let i = 0; i < pointsPerStrand; i++) {
+                const y = (i / pointsPerStrand - 0.5) * height;
+                const angle = i * 0.5;
+
+                const p1 = new THREE.Mesh(particleGeometry, particleMaterial);
+                p1.position.x = radius * Math.cos(angle);
+                p1.position.y = y;
+                p1.position.z = radius * Math.sin(angle);
+                dna.add(p1);
+
+                const p2 = new THREE.Mesh(particleGeometry, particleMaterial);
+                p2.position.x = radius * Math.cos(angle + Math.PI);
+                p2.position.y = y;
+                p2.position.z = radius * Math.sin(angle + Math.PI);
+                dna.add(p2);
+
+                const rungGeometry = new THREE.BufferGeometry().setFromPoints([p1.position, p2.position]);
+                const rung = new THREE.Line(rungGeometry, rungMaterial);
+                dna.add(rung);
+            }
+            
+            camera.position.z = 8;
+
+            const clock = new THREE.Clock();
+            const animate = () => {
+                requestAnimationFrame(animate);
+                const elapsedTime = clock.getElapsedTime();
+                dna.rotation.y = elapsedTime * 0.1;
+                dna.rotation.x = elapsedTime * 0.05;
+
+                renderer.render(scene, camera);
+            };
+            animate();
+        }
+
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+              camera.aspect = window.innerWidth / window.innerHeight;
+              camera.updateProjectionMatrix();
+              renderer.setSize(window.innerWidth, window.innerHeight);
+              renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }
+        });
+        
+        initDnaAnimation();
+
+        /********************** SPA Navigation Logic *************************/
+        function switchPage(targetId) {
+          document.body.scrollTop = 0; // For Safari
+          document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+          
+          pageContents.forEach(page => page.classList.remove('active'));
+          navLinks.forEach(link => link.classList.remove('active'));
+          
+          const targetPage = document.querySelector(targetId);
+          const activeLinks = document.querySelectorAll(`.nav-link[href="${targetId}"]`);
+          
+          if (targetPage) targetPage.classList.add('active');
+          activeLinks.forEach(link => link.classList.add('active'));
+
+          if (targetId === '#recommend' && chatMode !== 'emergency') {
+            initGeneralChat();
+          } else if (targetId !== '#recommend') {
+            chatMode = 'general';
+          }
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                window.location.hash = targetId;
+            });
+        });
+
+        window.addEventListener('hashchange', () => switchPage(window.location.hash || '#home'));
+        
+        /********************** Map Functionality *************************/
+        findHospitalsBtn.addEventListener('click', () => {
+            mapStatus.textContent = 'Fetching your location...';
+            mapStatus.classList.remove('text-red-400', 'text-green-400');
+            findHospitalsBtn.disabled = true;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        mapStatus.textContent = 'Redirecting to Google Maps...';
+                        mapStatus.classList.add('text-green-400');
+                        
+                        const url = `https://www.google.com/maps/search/hospitals/@${latitude},${longitude},14z`;
+                        
+                        setTimeout(() => {
+                           window.open(url, '_blank');
+                           findHospitalsBtn.disabled = false;
+                        }, 1000);
+                    },
+                    (error) => {
+                        let errorMessage = 'Could not access location. ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += "You denied the request for Geolocation.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += "Location information is unavailable.";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += "The request to get user location timed out.";
+                                break;
+                            case error.UNKNOWN_ERROR:
+                                errorMessage += "An unknown error occurred.";
+                                break;
+                        }
+                        mapStatus.textContent = errorMessage;
+                        mapStatus.classList.add('text-red-400');
+                        findHospitalsBtn.disabled = false;
+                    }
+                );
+            } else {
+                mapStatus.textContent = 'Geolocation is not supported by your browser.';
+                mapStatus.classList.add('text-red-400');
+                findHospitalsBtn.disabled = false;
+            }
+        });
+        
+        /******************** Other JS Logic (Triage, AI, etc.) ********************/
+        const translations = {
+            "en-US": {
+                probableConditions: "Probable conditions:",
+                explanation: "Explanation:",
+                advice: "Advice:",
+                medicine: "Recommended Medicine:",
+                remedies: "Home Remedies:",
+                youtube: "Related Videos:",
+                consultDoctor: "Please consult a doctor for a prescription.",
+                noRemedies: "No specific home remedies recommended. Follow medical advice.",
+                noVideos: "No videos found."
+            },
+            "hi-IN": {
+                probableConditions: "संभावित स्थितियां:",
+                explanation: "स्पष्टीकरण:",
+                advice: "सलाह:",
+                medicine: "अनुशंसित दवा:",
+                remedies: "घरेलू उपचार:",
+                youtube: "संबंधित वीडियो:",
+                consultDoctor: "कृपया प्रिस्क्रिप्शन के लिए डॉक्टर से सलाह लें।",
+                noRemedies: "कोई विशिष्ट घरेलू उपचार की सिफारिश नहीं की गई है। चिकित्सीय सलाह का पालन करें।",
+                noVideos: "कोई वीडियो नहीं मिला।"
+            },
+            "mr-IN": {
+                probableConditions: "संभाव्य परिस्थिती:",
+                explanation: "स्पष्टीकरण:",
+                advice: "सल्ला:",
+                medicine: "शिफारस केलेले औषध:",
+                remedies: "घरगुती उपाय:",
+                youtube: "संबंधित व्हिडिओ:",
+                consultDoctor: "कृपया प्रिस्क्रिप्शनसाठी डॉक्टरांचा सल्ला घ्या.",
+                noRemedies: "कोणत्याही विशिष्ट घरगुती उपायांची शिफारस केलेली नाही. वैद्यकीय सल्ल्याचे पालन करा.",
+                noVideos: "कोणतेही व्हिडिओ आढळले नाहीत."
+            },
+            "bn-IN": {
+                probableConditions: "সম্ভাব্য শর্তাবলী:",
+                explanation: "ব্যাখ্যা:",
+                advice: "পরামর্শ:",
+                medicine: "প্রস্তাবিত ঔষধ:",
+                remedies: "ঘরোয়া প্রতিকার:",
+                youtube: "সম্পর্কিত ভিডিও:",
+                consultDoctor: "অনুগ্রহ করে একটি প্রেসক্রিপশনের জন্য একজন ডাক্তারের সাথে পরামর্শ করুন।",
+                noRemedies: "কোনো নির্দিষ্ট ঘরোয়া প্রতিকারের সুপারিশ করা হয়নি। ডাক্তারের পরামর্শ অনুসরণ করুন।",
+                noVideos: "কোনো ভিডিও খুঁজে পাওয়া যায়নি।"
+            },
+            "ta-IN": {
+                probableConditions: "சாத்தியமான நிபந்தனைகள்:",
+                explanation: "விளக்கம்:",
+                advice: "ஆலோசனை:",
+                medicine: "பரிந்துரைக்கப்பட்ட மருந்து:",
+                remedies: "வீட்டு வைத்தியம்:",
+                youtube: "தொடர்புடைய வீடியோக்கள்:",
+                consultDoctor: "மருந்துச் சீட்டுக்கு மருத்துவரை அணுகவும்.",
+                noRemedies: "குறிப்பிட்ட வீட்டு வைத்தியம் எதுவும் பரிந்துரைக்கப்படவில்லை. மருத்துவ ஆலோசனையைப் பின்பற்றவும்.",
+                noVideos: "வீடியோக்கள் எதுவும் இல்லை."
+            },
+            "te-IN": {
+                probableConditions: "సంభావ్య పరిస్థితులు:",
+                explanation: "వివరణ:",
+                advice: "సలహా:",
+                medicine: "సిఫార్సు చేయబడిన మందు:",
+                remedies: "ఇంటి నివారణలు:",
+                youtube: "సంబంధిత వీడియోలు:",
+                consultDoctor: "ప్రిస్క్రిప్షన్ కోసం దయచేసి వైద్యుడిని సంప్రదించండి.",
+                noRemedies: "నిర్దిష్ట ఇంటి నివారణలు ఏవీ సిఫార్సు చేయబడలేదు. వైద్య సలహాను అనుసరించండి.",
+                noVideos: "వీడియోలు కనుగొనబడలేదు."
+            },
+            "kn-IN": {
+                probableConditions: "ಸಂಭಾವ್ಯ ಪರಿಸ್ಥಿತಿಗಳು:",
+                explanation: "ವಿವರಣೆ:",
+                advice: "ಸಲಹೆ:",
+                medicine: "ಶಿಫಾರಸು ಮಾಡಲಾದ ಔಷಧಿ:",
+                remedies: "ಮನೆಮದ್ದುಗಳು:",
+                youtube: "ಸಂಬಂಧಿತ ವೀಡಿಯೊಗಳು:",
+                consultDoctor: "ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ಗಾಗಿ ದಯವಿಟ್ಟು ವೈದ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+                noRemedies: "ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಮನೆಮದ್ದುಗಳನ್ನು ಶಿಫಾರಸು ಮಾಡಲಾಗಿಲ್ಲ. ವೈದ್ಯಕೀಯ ಸಲಹೆಯನ್ನು ಅನುಸರಿಸಿ.",
+                noVideos: "ಯಾವುದೇ ವೀಡಿಯೊಗಳು ಕಂಡುಬಂದಿಲ್ಲ."
+            },
+            "gu-IN": {
+                probableConditions: "સંભવિત પરિસ્થિતિઓ:",
+                explanation: "સમજૂતી:",
+                advice: "સલાહ:",
+                medicine: "ભલામણ કરેલ દવા:",
+                remedies: "ઘરગથ્થુ ઉપચાર:",
+                youtube: "સંબંધિત વિડિઓઝ:",
+                consultDoctor: "પ્રિસ્ક્રિપ્શન માટે કૃપા કરીને ડૉક્ટરની સલાહ લો.",
+                noRemedies: "કોઈ ચોક્કસ ઘરગથ્થુ ઉપચારની ભલામણ કરવામાં આવતી નથી. તબીબી સલાહ અનુસરો.",
+                noVideos: "કોઈ વિડિઓઝ મળ્યાં નથી."
+            },
+             "pa-IN": {
+                probableConditions: "ਸੰਭਾਵਿਤ ਸਥਿਤੀਆਂ:",
+                explanation: "ਵਿਆਖਿਆ:",
+                advice: "ਸਲਾਹ:",
+                medicine: "ਸਿਫ਼ਾਰਸ਼ੀ ਦਵਾਈ:",
+                remedies: "ਘਰੇਲੂ ਉਪਚਾਰ:",
+                youtube: "ਸੰਬੰਧਿਤ ਵੀਡੀਓਜ਼:",
+                consultDoctor: "ਨੁਸਖ਼ੇ ਲਈ ਕਿਰਪਾ ਕਰਕੇ ਡਾਕਟਰ ਨਾਲ ਸਲਾਹ ਕਰੋ।",
+                noRemedies: "ਕੋਈ ਖਾਸ ਘਰੇਲੂ ਉਪਚਾਰ ਦੀ ਸਿਫਾਰਸ਼ ਨਹੀਂ ਕੀਤੀ ਜਾਂਦੀ। ਡਾਕਟਰੀ ਸਲਾਹ ਦੀ ਪਾਲਣਾ ਕਰੋ।",
+                noVideos: "ਕੋਈ ਵੀਡੀਓ ਨਹੀਂ ਮਿਲਿਆ।"
+            }
+        };
+
+        function updateUIText(lang) {
+            const langStrings = translations[lang] || translations["en-US"];
+            conditionsLabel.textContent = langStrings.probableConditions;
+            explanationLabel.textContent = langStrings.explanation;
+            adviceLabel.textContent = langStrings.advice;
+            medicineLabel.textContent = langStrings.medicine;
+            remediesLabel.textContent = langStrings.remedies;
+            youtubeLabel.textContent = langStrings.youtube;
+        }
+
+        languageSelect.addEventListener('change', (e) => updateUIText(e.target.value));
+        
+        function extractJSONFromText(text) {
+          if (!text || typeof text !== "string") throw new Error("Empty AI response");
+          try {
+            const cleanedText = text.replace(/^```json\s*|```\s*$/g, '');
+            return JSON.parse(cleanedText);
+          } catch (e) {
+            console.error("JSON parsing failed for text:", text, e);
+            throw new Error("Could not parse the AI's response.");
+          }
+        }
+
+        const healthTips = [
+            { icon: 'fas fa-apple-alt', title: 'Eat Healthy', description: 'A balanced diet is crucial for good health and nutrition.' },
+            { icon: 'fas fa-tint', title: 'Stay Hydrated', description: 'Drink plenty of water throughout the day to stay hydrated.' },
+            { icon: 'fas fa-walking', title: 'Exercise Regularly', description: 'Aim for at least 30 minutes of moderate physical activity daily.' },
+        ];
+
+        function displayHealthTips() {
+            if (!healthTipsContainer) return;
+            let tipsHTML = '';
+            healthTips.forEach(tip => {
+                tipsHTML += `
+                    <div class="health-tip-card card p-6 rounded-lg text-center">
+                        <i class="${tip.icon} text-3xl text-green-500 dark:text-green-400 mb-4"></i>
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">${tip.title}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${tip.description}</p>
+                    </div>
+                `;
+            });
+            healthTipsContainer.innerHTML = tipsHTML;
+        }
+
+        triageBtn.onclick = async () => {
+            const symptomsText = symptomsEl.value.trim();
+            if (!symptomsText) {
+                resultError.textContent = "Please describe your symptoms.";
+                symptomsEl.focus();
+                return;
+            }
+
+            loader.classList.remove("hidden");
+            triageBtn.disabled = true;
+            resultError.textContent = "";
+            feedbackMessage.textContent = "";
+            consultAiDoctorBtn.classList.add('hidden');
+
+            const selectedLang = languageSelect.value;
+            const languageMap = { 
+                "en-US": "English", 
+                "hi-IN": "Hindi", 
+                "mr-IN": "Marathi", 
+                "bn-IN": "Bengali",
+                "ta-IN": "Tamil",
+                "te-IN": "Telugu",
+                "kn-IN": "Kannada",
+                "gu-IN": "Gujarati",
+                "pa-IN": "Punjabi"
+            };
+            const languageName = languageMap[selectedLang] || "English";
+
+            const prompt = `You are an expert AI medical triage assistant. Analyze symptoms: "${symptomsText}". Respond ONLY in ${languageName} with a valid JSON object.
+- The JSON keys must be in English.
+- The string values for "probable_conditions", "explanation", "advice", "recommended_medicine", "home_remedies", and youtube link titles must be in ${languageName}.
+- For "risk" level "HIGH", "EMERGENCY SOON", or "EMERGENCY NOW", "recommended_medicine" and "home_remedies" arrays MUST be empty. The "advice" MUST strongly urge consulting a doctor immediately.
+- For "risk" level "LOW" or "MODERATE", you may suggest common over-the-counter medicines and simple, safe home remedies.
+- Find 1-2 relevant YouTube videos for the home remedies or condition. If none are appropriate, return an empty array.
+
+JSON Schema:
+{
+  "risk": "LOW" | "MODERATE" | "HIGH" | "EMERGENCY SOON" | "EMERGENCY NOW",
+  "probable_conditions": ["Condition in ${languageName}"],
+  "explanation": "Explanation in ${languageName}.",
+  "advice": "Actionable advice in ${languageName}.",
+  "recommended_medicine": ["Medicine name in ${languageName}"],
+  "home_remedies": ["Remedy in ${languageName}"],
+  "youtube_links": [{"title": "Video title in ${languageName}", "url": "https://youtube.com/watch?v=..."}]
+}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "risk": { "type": "STRING" },
+                            "probable_conditions": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "explanation": { "type": "STRING" },
+                            "advice": { "type": "STRING" },
+                            "recommended_medicine": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "home_remedies": { "type": "ARRAY", "items": { "type": "STRING" } },
+                            "youtube_links": { 
+                                "type": "ARRAY", 
+                                "items": { 
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "title": { "type": "STRING" },
+                                        "url": { "type": "STRING" }
+                                    },
+                                    "required": ["title", "url"]
+                                }
+                            }
+                        },
+                        required: ["risk", "probable_conditions", "explanation", "advice", "recommended_medicine", "home_remedies", "youtube_links"]
+                    }
+                }
+            };
+            
+            try {
+                const res = await fetch(GEMINI_API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err?.error?.message || `API error: ${res.status}`);
+                }
+
+                const data = await res.json();
+                const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const outcome = extractJSONFromText(rawText);
+                lastOutcome = outcome;
+                updateUI(outcome);
+                triageResultsContainer.classList.remove('hidden');
+                document.getElementById('triage-results').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (e) {
+                console.error(e);
+                resultError.textContent = "⚠️ " + e.message;
+            } finally {
+                loader.classList.add("hidden");
+                triageBtn.disabled = false;
+            }
+        };
+
+        function updateUI(o) {
+            const risk = (o.risk || "UNKNOWN").toUpperCase().replace(/_/g, " ");
+            const lang = languageSelect.value;
+            riskBadge.textContent = risk;
+            riskBadge.className = "badge";
+            riskBadge.classList.remove("hidden");
+            const isEmergency = risk.includes("EMERGENCY") || risk === "HIGH";
+
+            if (risk === "LOW") riskBadge.classList.add("ok");
+            else if (isEmergency) riskBadge.classList.add("danger");
+            else riskBadge.classList.add("warn");
+
+            emergencyBanner.classList.toggle("hidden", !isEmergency);
+            consultAiDoctorBtn.classList.toggle('hidden', !isEmergency);
+
+
+            conditionsEl.innerHTML = Array.isArray(o.probable_conditions) && o.probable_conditions.length ? o.probable_conditions.map(c => `<li>${c}</li>`).join("") : "<li>—</li>";
+            explanationEl.textContent = o.explanation || "—";
+            adviceEl.textContent = o.advice || "—";
+
+            if (Array.isArray(o.recommended_medicine) && o.recommended_medicine.length) {
+                medicineEl.innerHTML = o.recommended_medicine.map(m => `<li>${m}</li>`).join("");
+            } else {
+                 medicineEl.innerHTML = `<li>${translations[lang]?.consultDoctor || translations['en-US'].consultDoctor}</li>`;
+            }
+
+            if (Array.isArray(o.home_remedies) && o.home_remedies.length) {
+                remediesEl.innerHTML = o.home_remedies.map(r => `<li>${r}</li>`).join("");
+            } else {
+                 remediesEl.innerHTML = `<li>${translations[lang]?.noRemedies || translations['en-US'].noRemedies}</li>`;
+            }
+            
+            if (Array.isArray(o.youtube_links) && o.youtube_links.length) {
+                youtubeLinksEl.innerHTML = o.youtube_links.map(link => `<li><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(link.title)}" target="_blank" class="text-green-600 dark:text-green-400 hover:underline"><i class="fab fa-youtube mr-2"></i>${link.title}</a></li>`).join("");
+            } else {
+                youtubeLinksEl.innerHTML = `<li>${translations[lang]?.noVideos || translations['en-US'].noVideos}</li>`;
+            }
+
+            playBtn.disabled = !(o.explanation || o.advice);
+        }
+        
+        async function handleFeedback(feedbackValue) {
+            if (!lastOutcome) {
+                resultError.textContent = "No result to give feedback on.";
+                return;
+            }
+            if (!db) {
+                resultError.textContent = "Feedback system is offline.";
+                return;
+            }
+            
+            thumbUpBtn.disabled = true;
+            thumbDownBtn.disabled = true;
+
+            try {
+                const feedbackCollection = collection(db, `/artifacts/${appId}/public/data/triage_feedback`);
+                await addDoc(feedbackCollection, {
+                    symptoms: symptomsEl.value.trim(),
+                    triageResult: lastOutcome,
+                    feedback: feedbackValue,
+                    timestamp: serverTimestamp()
+                });
+                
+                feedbackMessage.textContent = "Thank you for your feedback!";
+                if (feedbackValue === 'good') {
+                    thumbUpBtn.style.backgroundColor = 'var(--primary-green-dark)';
+                } else {
+                    thumbDownBtn.style.backgroundColor = '#ef4444';
+                }
+
+            } catch (e) {
+                console.error("Error submitting feedback:", e);
+                resultError.textContent = "Could not submit feedback.";
+                thumbUpBtn.disabled = false;
+                thumbDownBtn.disabled = false;
+            }
+        }
+        thumbUpBtn.addEventListener('click', () => handleFeedback('good'));
+        thumbDownBtn.addEventListener('click', () => handleFeedback('bad'));
+
+        consultAiDoctorBtn.addEventListener('click', () => {
+            chatMode = 'emergency';
+            initEmergencyChat();
+            window.location.hash = '#recommend';
+        });
+
+        function resetAiDoctor() {
+            aiAssistantTitle.textContent = 'AI Assistant';
+            aiDoctorStatus.textContent = 'Online';
+            aiDoctorStatus.classList.remove('text-red-400');
+            aiDoctorStatus.classList.add('text-green-600', 'dark:text-green-400');
+            aiDoctorChatWindow.innerHTML = '';
+            aiDoctorInput.placeholder = "Ask a health-related question...";
+            chatHistory = [];
+        }
+        
+        function initGeneralChat() {
+            resetAiDoctor();
+            const welcomeMessage = "Hello! I am your AI Health Assistant. You can ask me about general health topics, symptoms, or nutrition. How can I help you today? \n\nPlease note: I am not a substitute for professional medical advice.";
+            addMessageToChat(welcomeMessage, 'ai');
+            chatHistory = [{ role: 'model', parts: [{ text: welcomeMessage }] }];
+            showQuickReplies([
+                "What are the symptoms of the flu?",
+                "Tell me about a balanced diet.",
+                "How can I reduce stress?"
+            ]);
+        }
+
+        function addMessageToChat(text, sender) {
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${sender}`;
+            bubble.textContent = text;
+            aiDoctorChatWindow.appendChild(bubble);
+            aiDoctorChatWindow.scrollTop = aiDoctorChatWindow.scrollHeight;
+            return bubble;
+        }
+        
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = '<span></span><span></span><span></span>';
+            aiDoctorChatWindow.appendChild(indicator);
+            aiDoctorChatWindow.scrollTop = aiDoctorChatWindow.scrollHeight;
+            return indicator;
+        }
+
+        function initEmergencyChat() {
+            if (!lastOutcome) return;
+            resetAiDoctor();
+            
+            aiAssistantTitle.textContent = 'AI Emergency Assistant';
+            aiDoctorInput.placeholder = 'Ask a follow-up question...';
+
+            const initialMessage = `I understand you're in a high-risk situation. I'm here to help you stay calm and prepared while you wait for professional medical assistance. Please remember to keep your line open for emergency services.
+
+Have you already contacted your local emergency number (like 102 or 112)?`;
+            
+            addMessageToChat(initialMessage, 'ai');
+            chatHistory = [{ role: 'model', parts: [{ text: initialMessage }] }];
+            
+            aiDoctorStatus.textContent = `Assisting with: ${lastOutcome.probable_conditions[0]}`;
+            aiDoctorStatus.classList.add('text-red-500', 'dark:text-red-400');
+            aiDoctorStatus.classList.remove('text-green-600', 'dark:text-green-400');
+
+            showQuickReplies([
+                "Yes, help is on the way.",
+                "What should I do now?",
+                "Help me stay calm.",
+            ]);
+        }
+        
+        function showQuickReplies(replies) {
+            quickRepliesContainer.innerHTML = '';
+            if (replies.length > 0) {
+                quickRepliesContainer.style.display = 'flex';
+                replies.forEach(replyText => {
+                    const button = document.createElement('button');
+                    button.className = 'quick-reply-btn';
+                    button.textContent = replyText;
+                    button.onclick = () => {
+                        handleAiDoctorQuery(replyText);
+                    };
+                    quickRepliesContainer.appendChild(button);
+                });
+            } else {
+                quickRepliesContainer.style.display = 'none';
+            }
+        }
+
+        async function handleAiDoctorQuery(text = null) {
+            const userText = text || aiDoctorInput.value.trim();
+            if (!userText) return;
+
+            addMessageToChat(userText, 'user');
+            aiDoctorInput.value = '';
+            aiDoctorInput.disabled = true;
+            aiDoctorSendBtn.disabled = true;
+            showQuickReplies([]);
+
+            const typingIndicator = showTypingIndicator();
+            
+            chatHistory.push({ role: 'user', parts: [{ text: userText }] });
+
+            let systemPrompt;
+            if (chatMode === 'emergency') {
+                systemPrompt = `You are an AI Emergency Medical Assistant. Your user is in a high-risk medical situation based on this triage: Symptoms: "${symptomsEl.value.trim()}", Possible Conditions: "${lastOutcome.probable_conditions.join(', ')}". 
+Your role is to:
+1.  **Stay Calm and Reassuring:** Use a calm, empathetic, and simple tone.
+2.  **Reinforce Professional Help:** ALWAYS prioritize instructions from emergency services (like 112, 102). Your primary message is that professional help is on the way and is the best source of guidance.
+3.  **Provide Safe, Simple Instructions:** Offer clear, actionable, and safe advice for what to do *while waiting* for help. Examples: unlocking the door, gathering medications, finding a comfortable position that doesn't worsen their condition (e.g., sitting up if short of breath).
+4.  **DO NOT Diagnose or Prescribe:** Do not offer new diagnoses, suggest medications, or give complex medical advice. Defer to the paramedics/doctors.
+5.  **Be Concise:** Keep responses short and easy to read.`;
+            } else {
+                systemPrompt = `You are a helpful and knowledgeable AI Health Assistant. Your role is to provide clear, safe, and general information about health, wellness, symptoms, and nutrition. 
+- DO NOT provide a diagnosis or prescribe medication. 
+- ALWAYS recommend consulting a healthcare professional for personal medical advice.
+- Keep your answers concise and easy to understand.`
+            }
+
+            const payload = {
+                contents: [
+                    { role: 'user', parts: [{text: systemPrompt }] },
+                    ...chatHistory
+                ]
+            };
+
+            try {
+                const res = await fetch(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("API failed to respond.");
+
+                const data = await res.json();
+                const aiResponse = data.candidates[0].content.parts[0].text;
+
+                aiDoctorChatWindow.removeChild(typingIndicator);
+                addMessageToChat(aiResponse, 'ai');
+                chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+
+            } catch (e) {
+                aiDoctorChatWindow.removeChild(typingIndicator);
+                addMessageToChat("I'm having trouble connecting right now. Please focus on contacting emergency services. Stay on the line with them if possible.", 'ai');
+            } finally {
+                aiDoctorInput.disabled = false;
+                aiDoctorSendBtn.disabled = false;
+                aiDoctorInput.focus();
+            }
+        }
+
+        aiDoctorSendBtn.addEventListener('click', () => handleAiDoctorQuery());
+        aiDoctorInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAiDoctorQuery();
+            }
+        });
+
+        function populateEmergencyContacts() {
+            const contacts = [
+                { name: 'National Emergency Number', number: '112', icon: 'fas fa-globe' },
+                { name: 'Police', number: '100', icon: 'fas fa-user-shield' },
+                { name: 'Ambulance', number: '102', icon: 'fas fa-ambulance' },
+                { name: 'Fire', number: '101', icon: 'fas fa-fire-extinguisher' },
+                { name: 'Women Helpline', number: '1091', icon: 'fas fa-female' },
+                { name: 'Child Helpline', number: '1098', icon: 'fas fa-child' }
+            ];
+
+            emergencyContactsList.innerHTML = '';
+            contacts.forEach(contact => {
+                const card = `
+                    <a href="tel:${contact.number}" class="card emergency-contact-card bg-gray-100 dark:bg-gray-800/80 p-6 rounded-lg text-center flex flex-col items-center justify-center">
+                        <i class="${contact.icon} text-4xl text-red-500 dark:text-red-400 mb-4"></i>
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">${contact.name}</h4>
+                        <p class="text-2xl font-bold text-red-600 dark:text-red-300 tracking-widest">${contact.number}</p>
+                    </a>
+                `;
+                emergencyContactsList.innerHTML += card;
+            });
+        }
+
+        getLocationBtn.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                locationMessage.textContent = 'Fetching your location...';
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        locationMessage.textContent = `Location acquired. Displaying national emergency numbers. For local numbers specific to your area (Lat: ${latitude.toFixed(2)}, Lon: ${longitude.toFixed(2)}), please search online.`;
+                        locationMessage.classList.add('text-green-600');
+                    },
+                    (error) => {
+                        locationMessage.textContent = 'Could not access location. Please enable location services in your browser.';
+                        locationMessage.classList.add('text-red-500');
+                    }
+                );
+            } else {
+                locationMessage.textContent = 'Geolocation is not supported by your browser.';
+            }
+        });
+        
+        function populateVoices() {
+            availableVoices = speechSynthesis.getVoices();
+        }
+
+        populateVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoices;
+        }
+
+        playBtn.onclick = () => {
+            if (!lastOutcome) return;
+            const textToSpeak = [lastOutcome.advice, lastOutcome.explanation].filter(Boolean).join('. ');
+            if (!textToSpeak || !window.speechSynthesis) return;
+
+            speechSynthesis.cancel(); // Stop any previous speech
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            const selectedLang = languageSelect.value || "en-US";
+            utterance.lang = selectedLang;
+
+            const voices = speechSynthesis.getVoices();
+            if (voices.length === 0) {
+                console.warn("Speech synthesis voices not loaded yet.");
+            }
+            
+            let voice = voices.find(v => v.lang === selectedLang); 
+            
+            if (!voice) {
+                const langPart = selectedLang.split('-')[0];
+                voice = voices.find(v => v.lang.startsWith(langPart));
+            }
+            
+            if (voice) {
+                utterance.voice = voice;
+            } else {
+                console.warn(`No specific voice found for ${selectedLang}. Using browser default. Playback may not be correct.`);
+            }
+            
+            speechSynthesis.speak(utterance);
+        };
+
+        micBtn.onclick = () => {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) { resultError.textContent = "Speech recognition not supported."; return; }
+            const rec = new SR();
+            rec.lang = languageSelect.value || "en-US";
+            micBtn.disabled = true;
+            micBtn.textContent = "🎙️ Listening...";
+            rec.onresult = e => {
+                const t = e.results?.[0]?.[0]?.transcript || "";
+                if (t) symptomsEl.value += (symptomsEl.value ? " " : "") + t;
+            };
+            rec.onerror = e => { resultError.textContent = "STT error: " + (e.error || "unknown"); };
+            rec.onend = () => { micBtn.disabled = false; micBtn.textContent = "🎙️ Record"; };
+            rec.start();
+        };
+
+        document.addEventListener("keydown", e => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "enter") {
+                if(document.activeElement === symptomsEl) {
+                    triageBtn.click();
+                }
+            }
+        });
+
+        if(loginForm){
+          loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = e.target.email.value;
+            console.log(`Login attempt with email: ${email}`);
+            window.location.hash = '#home';
+          });
+        }
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener('click', () => {
+                console.log('"Continue with Google" clicked. In a real app, this would trigger the Google Sign-In flow.');
+                window.location.hash = '#home';
+            });
+        }
+    });
+  </script>
+</body>
+</html>
+
